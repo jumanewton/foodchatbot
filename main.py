@@ -25,7 +25,7 @@ async def handle_request(request: Request):
     intent_handler_dict={
         "track.order -  context: tracking-order": track_order,
         "order.complete - context: ongoing-order": complete_order,
-        # "order.remove - context: ongoing-order": remove_order,
+        "order.remove - context: ongoing-order": remove_order,
         "order.add - context: ongoing-order": add_order
     }
     response = intent_handler_dict.get(intent)(parameters, session_id)
@@ -71,7 +71,7 @@ def track_order(parameters: dict, session_id: str):
     
 
 
-def remove_from_order(parameters: dict, session_id: str):
+def remove_order(parameters: dict, session_id: str):
     if session_id not in inprogress_order:
         return JSONResponse(
             content={
@@ -94,10 +94,18 @@ def remove_from_order(parameters: dict, session_id: str):
 
     if removed_items:
         fulfillment_text = f"I have removed {', '.join(removed_items)} from your order. Anything else you would like to remove?"
-    elif unavailable_items:
+    if unavailable_items:
         fulfillment_text = f"You do not have {', '.join(unavailable_items)} in your order. Please check and try again."
+    if len(current_order.keys()) == 0:
+        fulfillment_text += "Your order is empty. Please add some items to your order."
     else:
-        fulfillment_text = "It looks like there were no items to remove from your order. Please try again."
+        order_str = generic_helper.get_str_from_food_dict(current_order)
+        fulfillment_text += f"So far, you have ordered {order_str}. Anything else you would like to remove?"
+    return JSONResponse(
+        content={
+            "fulfillmentText": fulfillment_text
+        }
+    )
 
 
     return JSONResponse(content={"fulfillmentText": fulfillment_text})
