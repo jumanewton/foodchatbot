@@ -71,8 +71,37 @@ def track_order(parameters: dict, session_id: str):
     
 
 
-def remove_order(parameters: dict, session_id: str):
-    pass
+def remove_from_order(parameters: dict, session_id: str):
+    if session_id not in inprogress_order:
+        return JSONResponse(
+            content={
+                "fulfillmentText": "I am sorry, I could not find any order to remove. Can you please add an order first?"
+            }
+        )
+
+    current_order = inprogress_order[session_id]
+    food_items = parameters.get("food-item", [])
+    
+    removed_items = []
+    unavailable_items = []
+    
+    for item in food_items:
+        if item in current_order:
+            del current_order[item]
+            removed_items.append(item)
+        else:
+            unavailable_items.append(item)
+
+    if removed_items:
+        fulfillment_text = f"I have removed {', '.join(removed_items)} from your order. Anything else you would like to remove?"
+    elif unavailable_items:
+        fulfillment_text = f"You do not have {', '.join(unavailable_items)} in your order. Please check and try again."
+    else:
+        fulfillment_text = "It looks like there were no items to remove from your order. Please try again."
+
+
+    return JSONResponse(content={"fulfillmentText": fulfillment_text})
+
 
 def complete_order(parameters: dict, session_id: str):
     if session_id not in inprogress_order:
